@@ -1,0 +1,75 @@
+================================================================================
+FOLDER STRUCTURE: CurricularFace
+================================================================================
+
+CurricularFace/
+|-- 2004.00288v1.pdf
+|-- config.py
+|-- evaluate.py
+|-- evaluate.sh
+|-- LICENSE
+|-- README.md
+|-- requirements.txt
+|-- train.py
+|-- train.sh
+|
+|-- backbone/
+|   |-- __init__.py
+|   |-- model_irse.py
+|   |-- model_mobilefacenet.py
+|   \-- model_resnet.py
+|
+|-- dataset/
+|   |-- __init__.py
+|   \-- datasets.py
+|
+|-- head/
+|   |-- __init__.py
+|   \-- metrics.py
+|
+|-- loss/
+|   |-- __init__.py
+|   \-- focal.py
+|
+\-- util/
+    |-- __init__.py
+    |-- metrics.py
+    |-- utils.py
+    \-- verification.py
+
+================================================================================
+FOLDERS LIST
+================================================================================
+backbone/
+dataset/
+head/
+loss/
+util/
+
+================================================================================
+FILES LIST
+================================================================================
+2004.00288v1.pdf
+config.py
+evaluate.py
+evaluate.sh
+LICENSE
+README.md
+requirements.txt
+train.py
+train.sh
+backbone/__init__.py
+backbone/model_irse.py
+backbone/model_mobilefacenet.py
+backbone/model_resnet.py
+dataset/__init__.py
+dataset/datasets.py
+head/__init__.py
+head/metrics.py
+loss/__init__.py
+loss/focal.py
+util/__init__.py
+util/metrics.py
+util/utils.py
+util/verification.py
+

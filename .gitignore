@@ -1,0 +1,24 @@
+# Biometric datasets and manifests
+/data/
+*.rec
+*.idx
+*.bin
+*.lst
+
+# Model weights and training outputs
+*.pth
+*.pt
+*.ckpt
+*.onnx
+/train_log/
+/checkpoints/
+/results/
+
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
