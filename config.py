@@ -3,10 +3,10 @@ import torch
 configurations = {
     1: dict(
         SEED = 1337, # random seed for reproduce results
-        DATA_ROOT = '/data2/yugehuang/data/', # the parent root where your train/val/test data are stored
-        RECORD_DIR = '/data2/yugehuang/data/refined_ms1m.txt', # the dataset record dir
-        MODEL_ROOT = './train_log/model', # the root to buffer your checkpoints
-        LOG_ROOT = './train_log/log', # the root to log your train/val status
+        DATA_ROOT = '/kaggle/input/datasets/merajsiddieque/casia-webface/data/CASIA-WebFace', # the parent root where your train/val/test data are stored
+        RECORD_DIR = '/kaggle/input/datasets/merajsiddieque/casia-webface/data/CASIA-WebFace/casia_train.txt', # the dataset record dir
+        MODEL_ROOT = '/kaggle/working/CurricularFace/train_log/model', # the root to buffer your checkpoints
+        LOG_ROOT = '/kaggle/working/CurricularFace/train_log/log', # the root to log your train/val status
         BACKBONE_RESUME_ROOT = "",
         HEAD_RESUME_ROOT = "",
         BACKBONE_NAME = 'IR_101', # support: ['ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
