@@ -219,7 +219,9 @@ def model_forward_backward():
     head = None
 
     try:
-        backbone = IR_101(input_size=(112, 112)).cuda().train()
+        backbone = IR_101(
+            input_size=(112, 112)
+        ).cuda().train()
 
         head = CurricularFace(
             in_features=EMBEDDING_SIZE,
@@ -236,6 +238,7 @@ def model_forward_backward():
             batch_size, device="cuda"
         ) % EXPECTED_IDENTITIES
 
+        # Backbone forward
         backbone_output = backbone(images)
 
         print(
@@ -252,54 +255,85 @@ def model_forward_backward():
                     for x in backbone_output
                 ]
             )
-
-            # IR_101 returns (512-d embedding, auxiliary features).
             embeddings = backbone_output[0]
         else:
             embeddings = backbone_output
 
         if not torch.is_tensor(embeddings):
-            raise TypeError(
-                f"Expected embedding tensor, got {type(embeddings).__name__}"
-            )
+            raise TypeError("Backbone embedding is not a tensor.")
 
         if tuple(embeddings.shape) != (batch_size, EMBEDDING_SIZE):
             raise AssertionError(
-                f"Unexpected embedding shape: {tuple(embeddings.shape)}"
+                f"Unexpected embedding shape: {embeddings.shape}"
             )
 
-        # CurricularFace receives only the 512-dimensional embeddings.
-        logits = head(embeddings, labels)
+        # CurricularFace forward
+        head_output = head(embeddings, labels)
 
-        if isinstance(logits, (tuple, list)):
+        if not isinstance(head_output, (tuple, list)):
             raise TypeError(
-                "CurricularFace returned a tuple/list. "
-                "Inspect the head output before computing cross-entropy."
+                "Expected CurricularFace to return two tensors."
             )
 
-        loss = torch.nn.functional.cross_entropy(logits, labels)
+        if len(head_output) != 2:
+            raise AssertionError(
+                f"Expected 2 outputs, got {len(head_output)}"
+            )
 
-        loss.backward()
+        logits, original_logits = head_output
 
-        if logits.shape != (batch_size, EXPECTED_IDENTITIES):
+        # Validate both outputs
+        expected_shape = (batch_size, EXPECTED_IDENTITIES)
+
+        if tuple(logits.shape) != expected_shape:
             raise AssertionError(
                 f"Unexpected logits shape: {logits.shape}"
             )
+
+        if tuple(original_logits.shape) != expected_shape:
+            raise AssertionError(
+                f"Unexpected original logits shape: {original_logits.shape}"
+            )
+
+        # Cross entropy uses modified CurricularFace logits
+        loss = torch.nn.functional.cross_entropy(
+            logits, labels
+        )
+
+        # Backward pass
+        loss.backward()
 
         if not torch.isfinite(loss):
             raise AssertionError("Loss contains NaN or Inf.")
 
         print("Embedding:", tuple(embeddings.shape))
-        print("Logits:", tuple(logits.shape))
+        print("Modified logits:", tuple(logits.shape))
+        print("Original logits:", tuple(original_logits.shape))
         print("Loss:", float(loss.detach()))
+
+        print(
+            "Backbone gradients:",
+            any(
+                p.grad is not None
+                for p in backbone.parameters()
+                if p.requires_grad
+            )
+        )
+
+        print(
+            "Head gradients:",
+            head.kernel.grad is not None
+        )
+
+        if head.kernel.grad is None:
+            raise AssertionError("CurricularFace head has no gradients.")
 
         return "IR-101 + CurricularFace forward/backward passed."
 
     finally:
         del backbone, head
         torch.cuda.empty_cache()
-
-
+        
 def checkpoint_resume_test():
     if not (REPO / "train.py").is_file():
         raise FileNotFoundError(REPO / "train.py")
