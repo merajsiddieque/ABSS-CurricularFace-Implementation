@@ -6,8 +6,8 @@ configurations = {
         SEED=1337,
 
         # CASIA-WebFace
-        DATA_ROOT="/content/CASIA-WebFace/data",
-        RECORD_DIR="/content/CASIA-WebFace/data/casia_train.txt",
+        DATA_ROOT="/content/CASIA-WebFace/data/data",
+        RECORD_DIR="/content/CASIA-WebFace/data/data/casia_train.txt",
 
         # Persistent Google Drive storage
         MODEL_ROOT="/content/drive/MyDrive/ABSS-CurricularFace-Implementation/checkpoints",
