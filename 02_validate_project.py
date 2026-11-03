@@ -21,7 +21,7 @@ import traceback
 from pathlib import Path
 
 REPO = Path("/content/ABSS-CurricularFace-Implementation")
-DATA_ROOT = Path("/content/CASIA-WebFace/data")
+DATA_ROOT = Path("/content/CASIA-WebFace/data/data")
 MANIFEST = DATA_ROOT / "casia_train.txt"
 EXPECTED_IMAGES = 490_623
 EXPECTED_IDENTITIES = 10_572
