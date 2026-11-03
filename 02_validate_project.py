@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """Validate CurricularFace environment, dataset, model, and checkpoint resume."""
 
@@ -129,7 +128,6 @@ def dataset_integrity():
                 continue
 
             labels.add(label)
-
             image_path = DATA_ROOT / rel
 
             if not image_path.is_file() and len(missing) < 5:
@@ -165,14 +163,24 @@ def dataset_integrity():
 
 def dataset_batch():
     import torch
+    from torchvision import transforms
     from dataset.datasets import FaceDataset
 
-    cfg = load_config()
+    # Dataset constructor expects:
+    # FaceDataset(root_dir, record_dir, transform, Train=True)
+
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]
+        )
+    ])
 
     ds = FaceDataset(
-        str(MANIFEST),
         str(DATA_ROOT),
-        cfg["INPUT_SIZE"]
+        str(MANIFEST),
+        transform
     )
 
     if len(ds) == 0:
@@ -196,46 +204,6 @@ def dataset_batch():
     )
 
     return "Dataset sample loads and transforms correctly."
-
-
-def extract_embedding(output, batch_size):
-    """Find the 512-dimensional embedding tensor in backbone output."""
-    import torch
-
-    candidates = []
-
-    def collect(value):
-        if torch.is_tensor(value):
-            if (
-                value.ndim == 2
-                and value.shape[0] == batch_size
-                and value.shape[1] == EMBEDDING_SIZE
-            ):
-                candidates.append(value)
-
-        elif isinstance(value, (tuple, list)):
-            for item in value:
-                collect(item)
-
-        elif isinstance(value, dict):
-            for item in value.values():
-                collect(item)
-
-    collect(output)
-
-    if not candidates:
-        raise TypeError(
-            "Could not find a [batch_size, 512] embedding tensor "
-            f"in backbone output. Output type: {type(output).__name__}"
-        )
-
-    if len(candidates) > 1:
-        print(
-            f"WARNING: Found {len(candidates)} possible embeddings; "
-            "using the first matching tensor."
-        )
-
-    return candidates[0]
 
 
 def model_forward_backward():
@@ -285,23 +253,33 @@ def model_forward_backward():
                 ]
             )
 
-        embeddings = extract_embedding(
-            backbone_output, batch_size
-        )
+            # IR_101 returns (512-d embedding, auxiliary features).
+            embeddings = backbone_output[0]
+        else:
+            embeddings = backbone_output
 
+        if not torch.is_tensor(embeddings):
+            raise TypeError(
+                f"Expected embedding tensor, got {type(embeddings).__name__}"
+            )
+
+        if tuple(embeddings.shape) != (batch_size, EMBEDDING_SIZE):
+            raise AssertionError(
+                f"Unexpected embedding shape: {tuple(embeddings.shape)}"
+            )
+
+        # CurricularFace receives only the 512-dimensional embeddings.
         logits = head(embeddings, labels)
 
         if isinstance(logits, (tuple, list)):
-            logits = extract_embedding(logits, batch_size)
+            raise TypeError(
+                "CurricularFace returned a tuple/list. "
+                "Inspect the head output before computing cross-entropy."
+            )
 
         loss = torch.nn.functional.cross_entropy(logits, labels)
 
         loss.backward()
-
-        if embeddings.shape != (batch_size, EMBEDDING_SIZE):
-            raise AssertionError(
-                f"Unexpected embedding shape: {embeddings.shape}"
-            )
 
         if logits.shape != (batch_size, EXPECTED_IDENTITIES):
             raise AssertionError(
@@ -328,7 +306,6 @@ def checkpoint_resume_test():
 
     cfg = load_config()
 
-    # Ensure the subprocess training configuration uses the same dataset.
     if Path(cfg["DATA_ROOT"]).resolve() != DATA_ROOT.resolve():
         raise AssertionError("config.py DATA_ROOT is incorrect.")
 
@@ -412,15 +389,28 @@ def main():
     results = []
 
     results.append(check("Environment and GPU", environment))
+
     results.append(
-        check("Repository, config, and Python syntax", source_and_config)
+        check(
+            "Repository, config, and Python syntax",
+            source_and_config
+        )
     )
+
     results.append(
-        check("Dataset manifest and file integrity", dataset_integrity)
+        check(
+            "Dataset manifest and file integrity",
+            dataset_integrity
+        )
     )
+
     results.append(
-        check("Dataset loading and transform", dataset_batch)
+        check(
+            "Dataset loading and transform",
+            dataset_batch
+        )
     )
+
     results.append(
         check(
             "IR-101 + CurricularFace GPU forward/backward",
@@ -437,6 +427,7 @@ def main():
         )
 
     print("\n" + "=" * 64)
+
     print(
         f"VALIDATION RESULT: {sum(results)}/{len(results)} checks passed"
     )
